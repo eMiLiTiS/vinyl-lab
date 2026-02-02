@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Iniciar sesión - Vinyl Lab</title>
+  <link href="https://fonts.googleapis.com/css2?family=Raleway:wght@300;400;600;700&family=Bebas+Neue&display=swap" rel="stylesheet">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><text y='0.9em' font-size='400'>💿</text></svg>">
+  
+  <!-- Rutas actualizadas para nueva estructura -->
+  <link rel="stylesheet" href="../../public/assets/styles/styles.css" />
+  <link rel="stylesheet" href="../../public/assets/styles/login.css" />
+</head>
+<body>
+  <div class="login-container">
+  <h2>Iniciar sesión</h2>
+
+  <form action="login.php" method="POST" autocomplete="on">
+    <div class="mb-3">
+      <label for="nombre" class="visually-hidden">Nombre de usuario</label>
+      <input
+        id="nombre"
+        type="text"
+        name="nombre"
+        class="form-control"
+        placeholder="Nombre de usuario"
+        autocomplete="username"
+        required
+      />
+    </div>
+
+    <div class="mb-3">
+      <label for="pass" class="visually-hidden">Contraseña</label>
+      <input
+        id="pass"
+        type="password"
+        name="pass"
+        class="form-control"
+        placeholder="Contraseña"
+        autocomplete="current-password"
+        required
+      />
+    </div>
+
+    <button type="submit" class="btn btn-enviar w-100">Entrar</button>
+  </form>
+</div>
+
+</body>
+</html>

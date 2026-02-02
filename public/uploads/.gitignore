@@ -1,0 +1,17 @@
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Env / secrets
+.env
+
+# Uploads (opcional: si son imágenes de prueba, puedes subirlas; si son subidas reales, mejor ignorarlas)
+# uploads/*
+
+# Adminer (opcional: si no quieres versionarlo)
+# adminer.php
