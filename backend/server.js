@@ -49,10 +49,21 @@ app.post("/api/dev/import-sql", async (req, res) => {
     const fs = require("fs");
     const path = require("path");
 
-    const sqlPath = path.join(__dirname, "sql", "vinyl_lab.sql");
+    const sqlPath = path.join(process.cwd(), "sql", "vinyl_lab.sql");
+
+    if (!fs.existsSync(sqlPath)) {
+      return res.status(500).json({
+        ok: false,
+        message: "SQL file not found",
+        sqlPath,
+        cwd: process.cwd()
+      });
+    }
+
     const sql = fs.readFileSync(sqlPath, "utf8")
       .replace(/CREATE DATABASE[^;]*;/gi, "")
       .replace(/USE\s+[^;]*;/gi, "");
+
 
     const conn = await pool.getConnection();
     try {
