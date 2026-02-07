@@ -43,6 +43,36 @@ const pool = mysql.createPool({
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+// TEMP: import SQL one-shot (BORRAR después)
+app.post("/api/dev/import-sql", async (req, res) => {
+  try {
+    const fs = require("fs");
+    const path = require("path");
+
+    const sqlPath = path.join(__dirname, "..", "sql", "vinyl_lab.sql");
+    const sql = fs.readFileSync(sqlPath, "utf8")
+      .replace(/CREATE DATABASE[^;]*;/gi, "")
+      .replace(/USE\s+[^;]*;/gi, "");
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.query("SET FOREIGN_KEY_CHECKS=0");
+      await conn.query(sql);
+      await conn.query("SET FOREIGN_KEY_CHECKS=1");
+    } finally {
+      conn.release();
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({ ok: false, message: e.message });
+  }
+});
+// Si tu dump tiene procedimientos o DELIMITER, esta función los maneja mejor.
+
+
+
 
 app.post("/api/auth/login", async (req, res) => {
   const { nombre, pass } = req.body || {};
