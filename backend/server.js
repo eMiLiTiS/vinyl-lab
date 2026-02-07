@@ -77,8 +77,14 @@ app.post("/api/dev/import-sql", async (req, res) => {
     res.json({ ok: true });
   } catch (e) {
     console.error(e);
-    res.status(500).json({ ok: false, message: e.message });
+    return res.status(500).json({
+      ok: false,
+      message: e?.message || "unknown error",
+      code: e?.code || null,
+      sqlMessage: e?.sqlMessage || null
+    });
   }
+
 });
 // Si tu dump tiene procedimientos o DELIMITER, esta función los maneja mejor.
 
