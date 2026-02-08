@@ -52,6 +52,16 @@ const pool = mysql.createPool({
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+app.get("/whoami", (req, res) => {
+  res.json({
+    ok: true,
+    file: __filename,
+    cwd: process.cwd(),
+    hasLoginRoute: typeof app?._router !== "undefined"
+  });
+});
+
+
 app.get("/version", (req, res) => {
   res.json({
     ok: true,
