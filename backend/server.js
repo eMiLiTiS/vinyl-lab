@@ -66,17 +66,31 @@ app.post("/api/dev/import-sql", async (req, res) => {
     }
 
     // lee dump y limpia CREATE DATABASE / USE
-    const raw = fs
-      .readFileSync(sqlPath, "utf8")
+    const raw = fs.readFileSync(sqlPath, "utf8")
       .replace(/CREATE DATABASE[^;]*;/gi, "")
       .replace(/USE\s+[^;]*;/gi, "");
 
-    // split por ; + salto de línea (dump típico phpMyAdmin)
-    const stmts = raw
-      .split(/;\s*\n/)
-      .map((s) => s.trim())
+    // 1) quita comentarios tipo "-- ..."
+    let cleaned = raw.replace(/^\s*--.*$/gm, "");
+
+    // 2) quita bloques /*! ... */ (directivas de MySQL)
+    cleaned = cleaned.replace(/\/\*![\s\S]*?\*\//g, "");
+
+    // 3) quita bloques /* ... */ normales
+    cleaned = cleaned.replace(/\/\*[\s\S]*?\*\//g, "");
+    cleaned = cleaned.replace(/^\s*SET\s+time_zone\s*=.*$/gmi, "");
+    cleaned = cleaned.replace(/^\s*START\s+TRANSACTION\s*;?$/gmi, "");
+
+
+    // 4) ahora sí: split robusto por ";" al final de statement
+    const stmts = cleaned
+      .split(/;\s*(?:\r?\n|$)/)
+      .map(s => s.trim())
       .filter(Boolean)
-      .map((s) => s + ";");
+      .map(s => s + ";");
+
+
+    // split por ; + salto de línea (dump típico phpMyAdmin)   
 
     const conn = await pool.getConnection();
     try {
@@ -85,17 +99,11 @@ app.post("/api/dev/import-sql", async (req, res) => {
       let executed = 0;
       for (let i = 0; i < stmts.length; i++) {
         const q = stmts[i];
-
-        // ignora comentarios y líneas especiales de dumps
-        if (q.startsWith("--") || q.startsWith("/*") || q.startsWith("/*!")) continue;
-
         await conn.query(q);
         executed++;
-
-        if (executed % 50 === 0) {
-          console.log("[import]", executed, "statements");
-        }
+        if (executed % 50 === 0) console.log("[import]", executed, "statements");
       }
+
 
       await conn.query("SET FOREIGN_KEY_CHECKS=1");
       return res.json({ ok: true, statements: executed });
