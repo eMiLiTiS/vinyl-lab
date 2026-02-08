@@ -1,155 +1,118 @@
-<?php
+-- phpMyAdmin SQL Dump
+-- version 5.2.1
+-- https://www.phpmyadmin.net/
+--
+-- Servidor: 127.0.0.1
+-- Tiempo de generación: 08-02-2026 a las 16:06:38
+-- Versión del servidor: 10.4.32-MariaDB
+-- Versión de PHP: 8.2.12
 
-/**
- * VINYL LAB - Conexión a Base de Datos
- * Ubicación: src/database/conexion.php
- */
+SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
+START TRANSACTION;
+SET time_zone = "+00:00";
 
-require_once __DIR__ . '/../config/config.php';
 
-// 1) Verificación del runtime
-if (!extension_loaded('mysqli') || !function_exists('mysqli_report')) {
-    // Mensaje claro para diagnosticar despliegues (Docker/Railway)
-    die("Runtime sin mysqli: este deploy no tiene la extensión mysqli habilitada.");
-}
+/*!40101 SET @OLD_CHARACTER_SET_CLIENT=@@CHARACTER_SET_CLIENT */;
+/*!40101 SET @OLD_CHARACTER_SET_RESULTS=@@CHARACTER_SET_RESULTS */;
+/*!40101 SET @OLD_COLLATION_CONNECTION=@@COLLATION_CONNECTION */;
+/*!40101 SET NAMES utf8mb4 */;
 
-// 2) Configurar reporting según entorno
-// - En DESARROLLO: excepciones (más fácil de depurar)
-// - En PRODUCCIÓN: evitar que se "rompa" mostrando detalles
-if (defined('ES_PRODUCCION') && ES_PRODUCCION) {
-    mysqli_report(MYSQLI_REPORT_OFF);
-} else {
-    mysqli_report(MYSQLI_REPORT_ERROR | MYSQLI_REPORT_STRICT);
-}
+--
+-- Base de datos: `vinyl_lab`
+--
 
-// ============================================
-// CONEXIÓN A BASE DE DATOS
-// ============================================
+-- --------------------------------------------------------
 
-try {
-    // Nota: DB_PORT debe ser int o null. Si viene string, lo casteamos.
-    $port = defined('DB_PORT') ? (int) DB_PORT : 3306;
+--
+-- Estructura de tabla para la tabla `usuarios`
+--
 
-    $conn = new mysqli(DB_HOST, DB_USER, DB_PASS, DB_NAME, $port);
+CREATE TABLE `usuarios` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(100) NOT NULL,
+  `pass` varchar(255) NOT NULL,
+  `email` varchar(150) DEFAULT NULL,
+  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
+  `ultimo_acceso` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-    // Si estás en modo OFF, connect_error sigue siendo útil:
-    if ($conn->connect_error) {
-        throw new Exception("Error de conexión: " . $conn->connect_error);
-    }
+--
+-- Volcado de datos para la tabla `usuarios`
+--
 
-    if (!$conn->set_charset("utf8mb4")) {
-        throw new Exception("Error al establecer charset UTF-8");
-    }
-} catch (Throwable $e) {
-    // Log siempre (no rompe UX, sí te deja rastro en Railway logs)
-    error_log("[DB] " . $e->getMessage());
+INSERT INTO `usuarios` (`id`, `nombre`, `pass`, `email`, `creado_en`, `ultimo_acceso`) VALUES
+(1, 'iker', '$2y$10$dUdZWHlQ10Eoc0EFcEYvP.hoX4/ZkLjVjXRlUSu6HgbomCulPd.6K', 'iker@vinyllab.com', '2026-02-02 17:58:19', '2026-02-03 08:28:07'),
+(2, 'admin', '$2y$10$osu/Xtq57K/bOSiQmC8S6eMi9IHX54OGoOauoDM8BM2d3PEtX8F/y', 'admin@vinyllab.com', '2026-02-02 17:58:19', NULL),
+(3, 'test', '$2b$10$4IVdxzkHQv1FJiUUkTOOR.sRjhoEcCU/LFad.pgnO18k5BzVrrHPe', 'test@vinylab.com', '2026-02-03 18:58:21', NULL);
 
-    if (defined('ES_PRODUCCION') && ES_PRODUCCION) {
-        die("Error de conexión a la base de datos. Contacte al administrador.");
-    }
+-- --------------------------------------------------------
 
-    die("ERROR DE DESARROLLO: " . $e->getMessage());
-}
+--
+-- Estructura de tabla para la tabla `vinilos`
+--
 
-// ============================================
-// FUNCIONES DE UTILIDAD
-// ============================================
+CREATE TABLE `vinilos` (
+  `id` int(11) NOT NULL,
+  `nombre` varchar(200) NOT NULL,
+  `artista` varchar(150) DEFAULT NULL,
+  `descripcion` text NOT NULL,
+  `precio` decimal(10,2) NOT NULL,
+  `anio` int(11) NOT NULL,
+  `imagen` varchar(500) NOT NULL,
+  `visible` tinyint(1) DEFAULT 1,
+  `creado_en` timestamp NOT NULL DEFAULT current_timestamp(),
+  `actualizado_en` timestamp NOT NULL DEFAULT current_timestamp() ON UPDATE current_timestamp()
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
-function ejecutarConsulta($conn, $sql, $types = "", $params = [])
-{
-    $stmt = $conn->prepare($sql);
+--
+-- Volcado de datos para la tabla `vinilos`
+--
 
-    if (!$stmt) {
-        error_log("Error preparando consulta: " . $conn->error);
-        return false;
-    }
+INSERT INTO `vinilos` (`id`, `nombre`, `artista`, `descripcion`, `precio`, `anio`, `imagen`, `visible`, `creado_en`, `actualizado_en`) VALUES
+(1, 'Thriller', 'Michael Jackson', 'Thriller es el álbum más vendido de todos los tiempos y una obra maestra del pop producida por Quincy Jones. Con clásicos como \"Billie Jean\", \"Beat It\" y \"Thriller\", marcó un antes y un después en la música moderna.', 29.99, 1982, 'uploads/vinilo_thriller.jpg', 1, '2026-02-02 17:58:19', '2026-02-02 17:58:19'),
+(2, 'Forever', 'Puff Daddy', 'Forever es un álbum clave de la era Bad Boy, consolidando la posición de Diddy como productor y magnate, rodeado de talento y entregando un sonido pulido que resonó fuertemente a finales de los 90.', 69.67, 1999, 'uploads/vinilo_forever.jpg', 1, '2026-02-02 17:58:19', '2026-02-02 17:58:19'),
+(3, 'Abbey Road', 'The Beatles', 'Abbey Road es el undécimo álbum de estudio de The Beatles. Grabado en los estudios de Abbey Road, es considerado una de las mejores obras de la banda y contiene clásicos como \"Come Together\" y \"Here Comes the Sun\".', 224.99, 1969, 'uploads/vinilo_abbey_road.jpg', 1, '2026-02-02 17:58:19', '2026-02-02 17:58:19'),
+(4, 'The Dark Side of the Moon', 'Pink Floyd', 'Uno de los álbumes más icónicos de la historia del rock progresivo. Explora temas universales como el tiempo, la muerte y la locura con una producción revolucionaria.', 189.99, 1973, 'uploads/vinilo_darkside.jpg', 1, '2026-02-02 17:58:19', '2026-02-02 17:58:19'),
+(5, 'Hot Space', 'Queen', 'Hot Space representa la incursión de Queen en el funk, disco y R&B. Aunque fue controvertido, incluye el hit \"Under Pressure\" con David Bowie.', 149.99, 1982, 'uploads/vinilo_hotspace.jpg', 1, '2026-02-02 17:58:19', '2026-02-02 17:58:19');
 
-    if ($types !== "" && !empty($params)) {
-        $stmt->bind_param($types, ...$params);
-    }
+--
+-- Índices para tablas volcadas
+--
 
-    if (!$stmt->execute()) {
-        error_log("Error ejecutando consulta: " . $stmt->error);
-        $stmt->close();
-        return false;
-    }
+--
+-- Indices de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  ADD PRIMARY KEY (`id`),
+  ADD UNIQUE KEY `unique_nombre` (`nombre`),
+  ADD UNIQUE KEY `unique_email` (`email`);
 
-    $result = $stmt->get_result();
-    $stmt->close();
+--
+-- Indices de la tabla `vinilos`
+--
+ALTER TABLE `vinilos`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `idx_visible` (`visible`),
+  ADD KEY `idx_anio` (`anio`),
+  ADD KEY `idx_nombre` (`nombre`);
 
-    return $result;
-}
+--
+-- AUTO_INCREMENT de las tablas volcadas
+--
 
-function limpiarHTML($string)
-{
-    return htmlspecialchars($string, ENT_QUOTES, 'UTF-8');
-}
+--
+-- AUTO_INCREMENT de la tabla `usuarios`
+--
+ALTER TABLE `usuarios`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=7;
 
-function limpiarInput($data)
-{
-    if (is_array($data)) {
-        return array_map('limpiarInput', $data);
-    }
+--
+-- AUTO_INCREMENT de la tabla `vinilos`
+--
+ALTER TABLE `vinilos`
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
+COMMIT;
 
-    $data = trim($data);
-    $data = stripslashes($data);
-    return $data;
-}
-
-// ============================================
-// GESTIÓN DE SESIONES
-// ============================================
-
-function iniciarSesionSegura()
-{
-    ini_set('session.cookie_httponly', 1);
-    ini_set('session.use_only_cookies', 1);
-
-    if (defined('ES_HTTPS')) {
-        ini_set('session.cookie_secure', ES_HTTPS);
-    }
-
-    if (defined('SESSION_LIFETIME')) {
-        ini_set('session.cookie_lifetime', SESSION_LIFETIME);
-    }
-
-    if (defined('SESSION_NAME')) {
-        session_name(SESSION_NAME);
-    }
-
-    if (session_status() === PHP_SESSION_NONE) {
-        session_start();
-    }
-}
-
-function estaAutenticado()
-{
-    return isset($_SESSION['usuario'], $_SESSION['user_id'], $_SESSION['autenticado'])
-        && $_SESSION['autenticado'] === true;
-}
-
-function requiereAutenticacion()
-{
-    if (!estaAutenticado()) {
-        // OJO: redirect_to_login() debe existir en tu config/helpers.
-        redirect_to_login();
-    }
-}
-
-function regenerarSesion()
-{
-    session_regenerate_id(true);
-}
-
-function usuarioActual()
-{
-    if (!estaAutenticado()) {
-        return null;
-    }
-
-    return [
-        'id' => $_SESSION['user_id'] ?? null,
-        'nombre' => $_SESSION['usuario'] ?? null,
-        'email' => $_SESSION['email'] ?? null
-    ];
-}
+/*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
+/*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
+/*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
