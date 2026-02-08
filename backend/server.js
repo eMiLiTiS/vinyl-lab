@@ -1,5 +1,4 @@
 const bcrypt = require("bcrypt");
-
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
@@ -9,19 +8,21 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 
-// CORS: permite tu frontend de Vercel
+// =========================
+// CORS (local ahora, Vercel después)
+// =========================
 const allowedOrigins = [
   "http://localhost:8080",
   "http://127.0.0.1:8080",
   "http://localhost:5501",
   "http://127.0.0.1:5501"
+  // luego añadimos tu dominio de Vercel aquí
 ];
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Permite llamadas sin origin (curl/postman)
-      if (!origin) return cb(null, true);
+      if (!origin) return cb(null, true); // curl/postman
       if (allowedOrigins.includes(origin)) return cb(null, true);
       return cb(new Error("Not allowed by CORS"));
     },
@@ -29,8 +30,9 @@ app.use(
   })
 );
 
-
-// Pool MySQL (Railway o el proveedor que uses)
+// =========================
+// MySQL Pool (Railway)
+// =========================
 const pool = mysql.createPool({
   host: process.env.MYSQLHOST,
   user: process.env.MYSQLUSER,
@@ -43,7 +45,11 @@ const pool = mysql.createPool({
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-// TEMP (BORRAR DESPUÉS): Import SQL dump en Railway con clave
+// =====================================================
+// TEMP (BORRAR DESPUÉS): Import SQL dump con clave
+// Endpoint: POST /api/dev/import-sql
+// Header:   x-import-key: <IMPORT_KEY>
+// =====================================================
 app.post("/api/dev/import-sql", async (req, res) => {
   try {
     const key = req.headers["x-import-key"];
@@ -54,76 +60,48 @@ app.post("/api/dev/import-sql", async (req, res) => {
     const fs = require("fs");
     const path = require("path");
 
-    // el dump está dentro de backend/sql/
     const sqlPath = path.join(__dirname, "sql", "vinyl_lab.sql");
     if (!fs.existsSync(sqlPath)) {
       return res.status(500).json({ ok: false, message: "sql file not found", sqlPath });
     }
 
-    const sql = fs.readFileSync(sqlPath, "utf8")
+    // lee dump y limpia CREATE DATABASE / USE
+    const raw = fs
+      .readFileSync(sqlPath, "utf8")
       .replace(/CREATE DATABASE[^;]*;/gi, "")
       .replace(/USE\s+[^;]*;/gi, "");
+
+    // split por ; + salto de línea (dump típico phpMyAdmin)
+    const stmts = raw
+      .split(/;\s*\n/)
+      .map((s) => s.trim())
+      .filter(Boolean)
+      .map((s) => s + ";");
 
     const conn = await pool.getConnection();
     try {
       await conn.query("SET FOREIGN_KEY_CHECKS=0");
-      await conn.query(sql);
+
+      let executed = 0;
+      for (let i = 0; i < stmts.length; i++) {
+        const q = stmts[i];
+
+        // ignora comentarios y líneas especiales de dumps
+        if (q.startsWith("--") || q.startsWith("/*") || q.startsWith("/*!")) continue;
+
+        await conn.query(q);
+        executed++;
+
+        if (executed % 50 === 0) {
+          console.log("[import]", executed, "statements");
+        }
+      }
+
       await conn.query("SET FOREIGN_KEY_CHECKS=1");
+      return res.json({ ok: true, statements: executed });
     } finally {
       conn.release();
     }
-
-    res.json({ ok: true });
-  } catch (e) {
-    console.error(e);
-    res.status(500).json({
-      ok: false,
-      message: e?.message || "unknown error",
-      code: e?.code || null,
-      sqlMessage: e?.sqlMessage || null
-    });
-  }
-});
-// eliminar luego
-
-
-
-
-
-
-
-// TEMP: import SQL one-shot (BORRAR después)
-app.post("/api/dev/import-sql", async (req, res) => {
-  try {
-    const fs = require("fs");
-    const path = require("path");
-
-    const sqlPath = path.join(process.cwd(), "sql", "vinyl_lab.sql");
-
-    if (!fs.existsSync(sqlPath)) {
-      return res.status(500).json({
-        ok: false,
-        message: "SQL file not found",
-        sqlPath,
-        cwd: process.cwd()
-      });
-    }
-
-    const sql = fs.readFileSync(sqlPath, "utf8")
-      .replace(/CREATE DATABASE[^;]*;/gi, "")
-      .replace(/USE\s+[^;]*;/gi, "");
-
-
-    const conn = await pool.getConnection();
-    try {
-      await conn.query("SET FOREIGN_KEY_CHECKS=0");
-      await conn.query(sql);
-      await conn.query("SET FOREIGN_KEY_CHECKS=1");
-    } finally {
-      conn.release();
-    }
-
-    res.json({ ok: true });
   } catch (e) {
     console.error(e);
     return res.status(500).json({
@@ -133,13 +111,11 @@ app.post("/api/dev/import-sql", async (req, res) => {
       sqlMessage: e?.sqlMessage || null
     });
   }
-
 });
-// Si tu dump tiene procedimientos o DELIMITER, esta función los maneja mejor.
 
-
-
-
+// =========================
+// AUTH: Login
+// =========================
 app.post("/api/auth/login", async (req, res) => {
   const { nombre, pass } = req.body || {};
   if (!nombre || !pass) {
@@ -157,11 +133,8 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const user = rows[0];
-
-    // Si tu BD aún guarda contraseñas en claro:
     const ok = await bcrypt.compare(pass, user.pass);
 
-    // Si guardas con password_hash, luego lo cambiamos a bcrypt.
     if (!ok) {
       return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
     }
