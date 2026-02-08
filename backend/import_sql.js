@@ -19,7 +19,7 @@ function splitSql(sql) {
 }
 
 async function main() {
-  const sqlPath = path.join(__dirname, "..", "sql", "vinyl_lab.sql");
+  const sqlPath = path.join(__dirname, "sql", "vinyl_lab.sql");
   const sql = fs.readFileSync(sqlPath, "utf8");
   const stmts = splitSql(sql);
 
