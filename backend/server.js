@@ -45,6 +45,17 @@ const pool = mysql.createPool({
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+// TEMP: listar tablas (BORRAR después)
+app.get("/api/dev/tables", async (req, res) => {
+  try {
+    const [rows] = await pool.query("SHOW TABLES");
+    res.json({ ok: true, tables: rows });
+  } catch (e) {
+    res.status(500).json({ ok: false, message: e?.message || "error" });
+  }
+});
+
+
 // =====================================================
 // TEMP (BORRAR DESPUÉS): Import SQL dump con clave
 // Endpoint: POST /api/dev/import-sql
