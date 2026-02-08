@@ -66,17 +66,29 @@ app.get("/version", (req, res) => {
 app.get("/routes", (req, res) => {
   const routes = [];
 
-  // Express guarda las rutas aquí
-  const stack = app._router?.stack || [];
+  // Express 4 suele usar app._router; Express 5 puede usar app.router
+  const router = app._router || app.router;
+  const stack = router?.stack || [];
+
   for (const layer of stack) {
     if (!layer.route) continue;
+
     const path = layer.route.path;
-    const methods = Object.keys(layer.route.methods || {}).filter(Boolean);
+    const methods = Object.keys(layer.route.methods || {})
+      .filter((m) => layer.route.methods[m])
+      .map((m) => m.toUpperCase());
+
     routes.push({ path, methods });
   }
 
-  res.json({ ok: true, count: routes.length, routes });
+  res.json({
+    ok: true,
+    routerType: app._router ? "_router" : (app.router ? "router" : "none"),
+    count: routes.length,
+    routes
+  });
 });
+
 
 
 
