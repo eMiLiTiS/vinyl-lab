@@ -16,8 +16,15 @@ const allowedOrigins = [
   "http://127.0.0.1:8080",
   "http://localhost:5501",
   "http://127.0.0.1:5501",
+
+  // Vercel (producción + previews)
+  "https://vinyl-lab.vercel.app",
+  "https://vinyl-lab-git-main-emilitiss-projects.vercel.app",
+
+  // (opcional) si quieres dejar el antiguo mientras pruebas:
   "https://vinyl-l8hckwlw9-emilitiss-projects.vercel.app"
 ];
+
 
 app.use(
   cors({
