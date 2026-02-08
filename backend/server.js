@@ -53,47 +53,5 @@ const pool = mysql.createPool({
 app.get("/health", (req, res) => res.json({ ok: true }));
 
 
-// =========================
-// AUTH: Login
-// =========================
-app.post("/api/auth/login", async (req, res) => {
-  const { nombre, pass } = req.body || {};
-  if (!nombre || !pass) {
-    return res.status(400).json({ message: "Faltan datos" });
-  }
-
-  try {
-    const [rows] = await pool.execute(
-      "SELECT id, nombre, pass FROM usuarios WHERE nombre = ? LIMIT 1",
-      [nombre]
-    );
-
-    if (!rows.length) {
-      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
-    }
-
-    const user = rows[0];
-    const ok = await bcrypt.compare(pass, user.pass);
-
-    if (!ok) {
-      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
-    }
-
-    const token = jwt.sign(
-      { uid: user.id, nombre: user.nombre },
-      process.env.JWT_SECRET,
-      { expiresIn: "2h" }
-    );
-
-    return res.json({
-      token,
-      user: { id: user.id, nombre: user.nombre }
-    });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ message: "Error interno" });
-  }
-});
-
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("API running on port", PORT));
