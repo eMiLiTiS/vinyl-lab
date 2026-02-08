@@ -1,37 +1,33 @@
-const bcrypt = require("bcrypt");
 const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const mysql = require("mysql2/promise");
+const bcrypt = require("bcrypt");
 require("dotenv").config();
 
 const app = express();
 app.use(express.json());
 
 // =========================
-// CORS (local ahora, Vercel después)
+// CORS (usa env si existe)
 // =========================
+// Si defines CORS_ORIGIN en Railway (ej: https://vinyl-lab.vercel.app),
+// se usa ese. Si no, cae a una lista local.
 const allowedOrigins = [
+  process.env.CORS_ORIGIN,
   "http://localhost:8080",
   "http://127.0.0.1:8080",
   "http://localhost:5501",
   "http://127.0.0.1:5501",
-
-  // Vercel (producción + previews)
-  "https://vinyl-lab.vercel.app",
-  "https://vinyl-lab-git-main-emilitiss-projects.vercel.app",
-
-  // (opcional) si quieres dejar el antiguo mientras pruebas:
-  "https://vinyl-l8hckwlw9-emilitiss-projects.vercel.app"
-];
-
+  "https://vinyl-lab.vercel.app"
+].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, cb) => {
       if (!origin) return cb(null, true); // curl/postman
       if (allowedOrigins.includes(origin)) return cb(null, true);
-      return cb(new Error("Not allowed by CORS"));
+      return cb(new Error(`Not allowed by CORS: ${origin}`));
     },
     credentials: false
   })
@@ -50,57 +46,44 @@ const pool = mysql.createPool({
   connectionLimit: 5
 });
 
+// =========================
+// Routes
+// =========================
 app.get("/health", (req, res) => res.json({ ok: true }));
 
-app.get("/whoami", (req, res) => {
-  res.json({
-    ok: true,
-    file: __filename,
-    cwd: process.cwd(),
-    hasLoginRoute: typeof app?._router !== "undefined"
-  });
-});
+app.post("/api/auth/login", async (req, res) => {
+  const { nombre, pass } = req.body || {};
+  if (!nombre || !pass) return res.status(400).json({ message: "Faltan datos" });
 
+  try {
+    const [rows] = await pool.execute(
+      "SELECT id, nombre, pass FROM usuarios WHERE nombre = ? LIMIT 1",
+      [nombre]
+    );
 
-app.get("/version", (req, res) => {
-  res.json({
-    ok: true,
-    cwd: process.cwd(),
-    dirname: __dirname,
-    hasLoginRoute: true,
-    railwayCommit: process.env.RAILWAY_GIT_COMMIT_SHA || null,
-    nodeEnv: process.env.NODE_ENV || null
-  });
-});
+    if (!rows.length) {
+      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+    }
 
-app.get("/routes", (req, res) => {
-  const routes = [];
+    const user = rows[0];
+    const ok = await bcrypt.compare(pass, user.pass);
 
-  // Express 4 suele usar app._router; Express 5 puede usar app.router
-  const router = app._router || app.router;
-  const stack = router?.stack || [];
+    if (!ok) {
+      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+    }
 
-  for (const layer of stack) {
-    if (!layer.route) continue;
+    const token = jwt.sign(
+      { uid: user.id, nombre: user.nombre },
+      process.env.JWT_SECRET,
+      { expiresIn: "2h" }
+    );
 
-    const path = layer.route.path;
-    const methods = Object.keys(layer.route.methods || {})
-      .filter((m) => layer.route.methods[m])
-      .map((m) => m.toUpperCase());
-
-    routes.push({ path, methods });
+    return res.json({ token, user: { id: user.id, nombre: user.nombre } });
+  } catch (err) {
+    console.error("[login]", err);
+    return res.status(500).json({ message: "Error interno" });
   }
-
-  res.json({
-    ok: true,
-    routerType: app._router ? "_router" : (app.router ? "router" : "none"),
-    count: routes.length,
-    routes
-  });
 });
-
-
-
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("API running on port", PORT));
