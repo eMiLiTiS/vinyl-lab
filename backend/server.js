@@ -54,15 +54,21 @@ app.get("/health", (req, res) => res.json({ ok: true }));
 app.get("/api/vinilos", async (req, res) => {
   try {
     const [rows] = await pool.execute(
-      "SELECT id, nombre, artista, precio, imagen FROM vinilos WHERE activo = 1 ORDER BY id DESC"
+      "SELECT id, nombre, artista, precio, imagen FROM vinilos ORDER BY id DESC"
     );
 
     return res.json({ ok: true, vinilos: rows });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json({ ok: false, message: "Error interno" });
+    console.error("VINILOS ERROR:", err);
+    return res.status(500).json({
+      ok: false,
+      message: err?.message || "Error interno",
+      code: err?.code || null,
+      sqlMessage: err?.sqlMessage || null
+    });
   }
 });
+
 
 
 app.post("/api/auth/login", async (req, res) => {
