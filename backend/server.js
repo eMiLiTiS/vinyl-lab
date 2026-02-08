@@ -54,6 +54,39 @@ app.get("/api/dev/tables", async (req, res) => {
     res.status(500).json({ ok: false, message: e?.message || "error" });
   }
 });
+// TEMP: crear/actualizar password bcrypt para un usuario (BORRAR después)
+app.post("/api/dev/setpass", async (req, res) => {
+  try {
+    const key = req.headers["x-import-key"];
+    if (!process.env.IMPORT_KEY || key !== process.env.IMPORT_KEY) {
+      return res.status(401).json({ ok: false, message: "unauthorized" });
+    }
+
+    const { nombre, newPass } = req.body || {};
+    if (!nombre || !newPass) {
+      return res.status(400).json({ ok: false, message: "faltan datos" });
+    }
+
+    const hash = await bcrypt.hash(newPass, 10);
+
+    // intenta update; si no existe, lo crea
+    const [r] = await pool.execute(
+      "UPDATE usuarios SET pass = ? WHERE nombre = ?",
+      [hash, nombre]
+    );
+
+    if (r.affectedRows === 0) {
+      await pool.execute(
+        "INSERT INTO usuarios (nombre, pass) VALUES (?, ?)",
+        [nombre, hash]
+      );
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    res.status(500).json({ ok: false, message: e?.message || "error" });
+  }
+});
 
 
 // =====================================================
