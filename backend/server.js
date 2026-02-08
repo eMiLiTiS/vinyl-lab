@@ -52,6 +52,18 @@ const pool = mysql.createPool({
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+app.get("/version", (req, res) => {
+  res.json({
+    ok: true,
+    cwd: process.cwd(),
+    dirname: __dirname,
+    hasLoginRoute: true,
+    railwayCommit: process.env.RAILWAY_GIT_COMMIT_SHA || null,
+    nodeEnv: process.env.NODE_ENV || null
+  });
+});
+
+
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log("API running on port", PORT));
