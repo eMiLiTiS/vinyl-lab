@@ -51,6 +51,20 @@ const pool = mysql.createPool({
 // =========================
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+app.get("/api/vinilos", async (req, res) => {
+  try {
+    const [rows] = await pool.execute(
+      "SELECT id, nombre, artista, precio, imagen FROM vinilos WHERE activo = 1 ORDER BY id DESC"
+    );
+
+    return res.json({ ok: true, vinilos: rows });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ ok: false, message: "Error interno" });
+  }
+});
+
+
 app.post("/api/auth/login", async (req, res) => {
   const { nombre, pass } = req.body || {};
   if (!nombre || !pass) return res.status(400).json({ message: "Faltan datos" });
