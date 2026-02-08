@@ -63,6 +63,21 @@ app.get("/version", (req, res) => {
   });
 });
 
+app.get("/routes", (req, res) => {
+  const routes = [];
+
+  // Express guarda las rutas aquí
+  const stack = app._router?.stack || [];
+  for (const layer of stack) {
+    if (!layer.route) continue;
+    const path = layer.route.path;
+    const methods = Object.keys(layer.route.methods || {}).filter(Boolean);
+    routes.push({ path, methods });
+  }
+
+  res.json({ ok: true, count: routes.length, routes });
+});
+
 
 
 const PORT = process.env.PORT || 3000;
