@@ -43,6 +43,55 @@ const pool = mysql.createPool({
 
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+// TEMP (BORRAR DESPUÉS): Import SQL dump en Railway con clave
+app.post("/api/dev/import-sql", async (req, res) => {
+  try {
+    const key = req.headers["x-import-key"];
+    if (!process.env.IMPORT_KEY || key !== process.env.IMPORT_KEY) {
+      return res.status(401).json({ ok: false, message: "unauthorized" });
+    }
+
+    const fs = require("fs");
+    const path = require("path");
+
+    // el dump está dentro de backend/sql/
+    const sqlPath = path.join(__dirname, "sql", "vinyl_lab.sql");
+    if (!fs.existsSync(sqlPath)) {
+      return res.status(500).json({ ok: false, message: "sql file not found", sqlPath });
+    }
+
+    const sql = fs.readFileSync(sqlPath, "utf8")
+      .replace(/CREATE DATABASE[^;]*;/gi, "")
+      .replace(/USE\s+[^;]*;/gi, "");
+
+    const conn = await pool.getConnection();
+    try {
+      await conn.query("SET FOREIGN_KEY_CHECKS=0");
+      await conn.query(sql);
+      await conn.query("SET FOREIGN_KEY_CHECKS=1");
+    } finally {
+      conn.release();
+    }
+
+    res.json({ ok: true });
+  } catch (e) {
+    console.error(e);
+    res.status(500).json({
+      ok: false,
+      message: e?.message || "unknown error",
+      code: e?.code || null,
+      sqlMessage: e?.sqlMessage || null
+    });
+  }
+});
+// eliminar luego
+
+
+
+
+
+
+
 // TEMP: import SQL one-shot (BORRAR después)
 app.post("/api/dev/import-sql", async (req, res) => {
   try {
