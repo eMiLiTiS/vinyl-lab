@@ -37,44 +37,44 @@
       <button type="submit" class="btn btn-enviar w-100">Entrar</button>
     </form>
   </div>
-<script>
-  // 1) pon aquí la URL de Railway cuando la tengas
-  const API_BASE = "https://vinyl-lab-production-ccc7.up.railway.app";
+  <script>
 
-  const form = document.getElementById("loginForm");
+    const API_BASE = "https://vinyl-lab-production-ccc7.up.railway.app";
 
-  form.addEventListener("submit", async (e) => {
-    e.preventDefault();
+    const form = document.getElementById("loginForm");
 
-    const nombre = document.getElementById("nombre").value.trim();
-    const pass = document.getElementById("pass").value;
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nombre, pass })
-      });
+      const nombre = document.getElementById("nombre").value.trim();
+      const pass = document.getElementById("pass").value;
 
-      const data = await res.json().catch(() => ({}));
+      try {
+        const res = await fetch(`${API_BASE}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nombre, pass })
+        });
 
-      if (!res.ok) {
-        alert(data?.message || "Credenciales inválidas");
-        return;
+        const data = await res.json().catch(() => ({}));
+
+        if (!res.ok) {
+          alert(data?.message || "Credenciales inválidas");
+          return;
+        }
+
+        // guarda token
+        localStorage.setItem("token", data.token);
+        localStorage.setItem("user", JSON.stringify(data.user));
+
+        // redirige al catálogo estático (o a donde quieras)
+        window.location.href = "catalogo.html";
+      } catch (err) {
+        console.error(err);
+        alert("No se pudo conectar con el servidor. Revisa Railway/URL.");
       }
-
-      // guarda token
-      localStorage.setItem("token", data.token);
-      localStorage.setItem("user", JSON.stringify(data.user));
-
-      // redirige al catálogo estático (o a donde quieras)
-      window.location.href = "catalogo.html";
-    } catch (err) {
-      console.error(err);
-      alert("No se pudo conectar con el servidor. Revisa Railway/URL.");
-    }
-  });
-</script>
+    });
+  </script>
 
 </body>
 
