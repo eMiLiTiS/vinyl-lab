@@ -1,5 +1,6 @@
 <!doctype html>
 <html lang="es">
+
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
@@ -15,6 +16,8 @@
     <div class="container d-flex align-items-center justify-content-between">
       <div class="header-left d-flex align-items-center">
         <img src="imagenes/VinylLab.png" alt="Logo Vinyl Lab" class="header-logo me-2">
+        <img src="https://vinyl-lab-production-ccc7.up.railway.app/uploads/vinilo_thriller.jpg" alt="">
+
         <h1 class="header-title">Vinyl Lab</h1>
       </div>
 
@@ -43,6 +46,10 @@
 
   <script>
     const API_BASE = "https://vinyl-lab-production-ccc7.up.railway.app";
+
+    fetch(`${API}/api/vinilos`)
+      .then(r => r.json())
+      .then(data => console.log(data));
 
     const grid = document.getElementById("grid");
     const estado = document.getElementById("estado");
@@ -99,4 +106,5 @@
     cargar();
   </script>
 </body>
+
 </html>
