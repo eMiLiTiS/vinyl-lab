@@ -55,7 +55,18 @@ const pool = mysql.createPool({
 // =========================
 // Routes
 // =========================
+// Routes
+app.get("/", (req, res) => {
+  res.json({
+    ok: true,
+    service: "vinyl-lab api",
+    endpoints: ["/health", "/api/vinilos", "/api/auth/login", "/uploads/<archivo>"]
+  });
+});
+
 app.get("/health", (req, res) => res.json({ ok: true }));
+
+
 
 
 
