@@ -8,6 +8,12 @@ require("dotenv").config();
 const app = express();
 app.use(express.json());
 
+const path = require("path");
+
+// Servir imágenes subidas (repo: /public/uploads)
+app.use("/uploads", express.static(path.join(__dirname, "..", "public", "uploads")));
+
+
 // =========================
 // CORS (usa env si existe)
 // =========================
