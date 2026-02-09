@@ -47,6 +47,10 @@
   <script>
   const API_BASE = "https://vinyl-lab-production-ccc7.up.railway.app";
 
+  fetch(`${API_BASE}/api/vinilos`)
+    .then(r => r.json())
+    .then(data => console.log(data));
+
   const grid = document.getElementById("grid");
   const estado = document.getElementById("estado");
 
@@ -62,7 +66,7 @@
     });
 
     // Si en la BD viene "uploads/xxx.jpg" -> queda "https://.../uploads/xxx.jpg"
-    const imgSrc = v.imagen ? `${API_BASE}/${v.imagen.replace(/^\/+/, "")}` : "";
+    const imgSrc = v.imagen ? `${API_BASE}/${String(v.imagen).replace(/^\/+/, "")}` : "";
 
     return `
       <div class="col-12 col-sm-6 col-md-4 col-lg-3">
