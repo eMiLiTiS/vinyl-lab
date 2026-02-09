@@ -51,23 +51,20 @@ const pool = mysql.createPool({
 // =========================
 app.get("/health", (req, res) => res.json({ ok: true }));
 
+
+
 app.get("/api/vinilos", async (req, res) => {
   try {
-    const [rows] = await pool.execute(
+    const [rows] = await pool.query(
       "SELECT id, nombre, artista, precio, imagen FROM vinilos ORDER BY id DESC"
     );
-
-    return res.json({ ok: true, vinilos: rows });
+    res.json({ ok: true, vinilos: rows });
   } catch (err) {
-    console.error("VINILOS ERROR:", err);
-    return res.status(500).json({
-      ok: false,
-      message: err?.message || "Error interno",
-      code: err?.code || null,
-      sqlMessage: err?.sqlMessage || null
-    });
+    console.error(err);
+    res.status(500).json({ ok: false, message: "Error interno" });
   }
 });
+
 
 
 
