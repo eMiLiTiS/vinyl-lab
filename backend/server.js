@@ -79,6 +79,19 @@ app.get("/health", (req, res) => {
   res.json({ ok: true });
 });
 
+app.get("/debug/uploads", (req, res) => {
+  const fs = require("fs");
+  const dir = path.join(__dirname, "..", "public", "uploads");
+
+  try {
+    const files = fs.readdirSync(dir);
+    return res.json({ ok: true, dir, files });
+  } catch (e) {
+    return res.status(500).json({ ok: false, dir, error: e.message });
+  }
+});
+
+
 app.get("/api/vinilos", async (req, res) => {
   try {
     const [rows] = await pool.query(
