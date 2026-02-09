@@ -4,38 +4,39 @@ const jwt = require("jsonwebtoken");
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
 require("dotenv").config();
+const path = require("path");
 
 const app = express();
 app.use(express.json());
 
-const path = require("path");
-
-// Servir imágenes subidas (repo: /public/uploads)
-app.use("/uploads", express.static(path.join(__dirname, "..", "public", "uploads")));
-
+// =========================
+// Static: /uploads -> /public/uploads
+// =========================
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "public", "uploads"))
+);
 
 // =========================
-// CORS (usa env si existe)
+// CORS
 // =========================
-// Si defines CORS_ORIGIN en Railway (ej: https://vinyl-lab.vercel.app),
-// se usa ese. Si no, cae a una lista local.
 const allowedOrigins = [
   process.env.CORS_ORIGIN,
   "http://localhost:8080",
   "http://127.0.0.1:8080",
   "http://localhost:5501",
   "http://127.0.0.1:5501",
-  "https://vinyl-lab.vercel.app"
+  "https://vinyl-lab.vercel.app",
 ].filter(Boolean);
 
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin) return cb(null, true); // curl/postman
+      if (!origin) return cb(null, true);
       if (allowedOrigins.includes(origin)) return cb(null, true);
       return cb(new Error(`Not allowed by CORS: ${origin}`));
     },
-    credentials: false
+    credentials: false,
   })
 );
 
@@ -49,26 +50,21 @@ const pool = mysql.createPool({
   database: process.env.MYSQLDATABASE,
   port: Number(process.env.MYSQLPORT || 3306),
   waitForConnections: true,
-  connectionLimit: 5
+  connectionLimit: 5,
 });
 
 // =========================
 // Routes
 // =========================
-// Routes
 app.get("/", (req, res) => {
   res.json({
     ok: true,
     service: "vinyl-lab api",
-    endpoints: ["/health", "/api/vinilos", "/api/auth/login", "/uploads/<archivo>"]
+    endpoints: ["/health", "/api/vinilos", "/api/auth/login", "/uploads/<archivo>"],
   });
 });
 
 app.get("/health", (req, res) => res.json({ ok: true }));
-
-
-
-
 
 app.get("/api/vinilos", async (req, res) => {
   try {
@@ -82,9 +78,6 @@ app.get("/api/vinilos", async (req, res) => {
   }
 });
 
-
-
-
 app.post("/api/auth/login", async (req, res) => {
   const { nombre, pass } = req.body || {};
   if (!nombre || !pass) return res.status(400).json({ message: "Faltan datos" });
@@ -95,16 +88,11 @@ app.post("/api/auth/login", async (req, res) => {
       [nombre]
     );
 
-    if (!rows.length) {
-      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
-    }
+    if (!rows.length) return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
 
     const user = rows[0];
     const ok = await bcrypt.compare(pass, user.pass);
-
-    if (!ok) {
-      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
-    }
+    if (!ok) return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
 
     const token = jwt.sign(
       { uid: user.id, nombre: user.nombre },
