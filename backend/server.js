@@ -3,18 +3,25 @@ const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const mysql = require("mysql2/promise");
 const bcrypt = require("bcrypt");
-require("dotenv").config();
 const path = require("path");
-
+require("dotenv").config();
 
 const app = express();
+
+// =========================
+// Middlewares base
+// =========================
 app.use(express.json());
 
 // =========================
-// Static: /uploads -> /public/uploads (server.js está en /backend)
+// Static files
+// /uploads -> public/uploads
+// (server.js está en /backend)
 // =========================
-app.use("/uploads", express.static(path.join(__dirname, "..", "public", "uploads")));
-
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "..", "public", "uploads"))
+);
 
 // =========================
 // CORS
@@ -31,7 +38,7 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: (origin, cb) => {
-      if (!origin) return cb(null, true);
+      if (!origin) return cb(null, true); // Postman / curl
       if (allowedOrigins.includes(origin)) return cb(null, true);
       return cb(new Error(`Not allowed by CORS: ${origin}`));
     },
@@ -59,27 +66,37 @@ app.get("/", (req, res) => {
   res.json({
     ok: true,
     service: "vinyl-lab api",
-    endpoints: ["/health", "/api/vinilos", "/api/auth/login", "/uploads/<archivo>"],
+    endpoints: [
+      "/health",
+      "/api/vinilos",
+      "/api/auth/login",
+      "/uploads/<archivo>",
+    ],
   });
 });
 
-app.get("/health", (req, res) => res.json({ ok: true }));
+app.get("/health", (req, res) => {
+  res.json({ ok: true });
+});
 
 app.get("/api/vinilos", async (req, res) => {
   try {
     const [rows] = await pool.query(
       "SELECT id, nombre, artista, precio, imagen FROM vinilos ORDER BY id DESC"
     );
+
     res.json({ ok: true, vinilos: rows });
   } catch (err) {
-    console.error(err);
+    console.error("[api/vinilos]", err);
     res.status(500).json({ ok: false, message: "Error interno" });
   }
 });
 
 app.post("/api/auth/login", async (req, res) => {
   const { nombre, pass } = req.body || {};
-  if (!nombre || !pass) return res.status(400).json({ message: "Faltan datos" });
+  if (!nombre || !pass) {
+    return res.status(400).json({ message: "Faltan datos" });
+  }
 
   try {
     const [rows] = await pool.execute(
@@ -87,11 +104,16 @@ app.post("/api/auth/login", async (req, res) => {
       [nombre]
     );
 
-    if (!rows.length) return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+    if (!rows.length) {
+      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+    }
 
     const user = rows[0];
     const ok = await bcrypt.compare(pass, user.pass);
-    if (!ok) return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+
+    if (!ok) {
+      return res.status(401).json({ message: "Usuario o contraseña incorrectos" });
+    }
 
     const token = jwt.sign(
       { uid: user.id, nombre: user.nombre },
@@ -99,12 +121,20 @@ app.post("/api/auth/login", async (req, res) => {
       { expiresIn: "2h" }
     );
 
-    return res.json({ token, user: { id: user.id, nombre: user.nombre } });
+    res.json({
+      token,
+      user: { id: user.id, nombre: user.nombre },
+    });
   } catch (err) {
     console.error("[login]", err);
-    return res.status(500).json({ message: "Error interno" });
+    res.status(500).json({ message: "Error interno" });
   }
 });
 
+// =========================
+// Start server
+// =========================
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log("API running on port", PORT));
+app.listen(PORT, () => {
+  console.log(`API running on port ${PORT}`);
+});
