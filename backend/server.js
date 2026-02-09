@@ -28,6 +28,16 @@ const allowedOrigins = [
   "https://vinyl-lab.vercel.app",
 ].filter(Boolean);
 
+app.use(
+  cors({
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (allowedOrigins.includes(origin)) return cb(null, true);
+      return cb(new Error(`Not allowed by CORS: ${origin}`));
+    },
+    credentials: false,
+  })
+);
 
 // =========================
 // MySQL Pool (Railway)
