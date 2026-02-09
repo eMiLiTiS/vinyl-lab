@@ -45,66 +45,76 @@
   </footer>
 
   <script>
-    const API_BASE = "https://vinyl-lab-production-ccc7.up.railway.app";
+  const API_BASE = "https://vinyl-lab-production-ccc7.up.railway.app";
 
-    fetch(`${API}/api/vinilos`)
-      .then(r => r.json())
-      .then(data => console.log(data));
+  const grid = document.getElementById("grid");
+  const estado = document.getElementById("estado");
 
-    const grid = document.getElementById("grid");
-    const estado = document.getElementById("estado");
+  function showMsg(msg) {
+    estado.style.display = "block";
+    estado.textContent = msg;
+  }
 
-    function showMsg(msg) {
-      estado.style.display = "block";
-      estado.textContent = msg;
-    }
+  function cardVinilo(v) {
+    const precio = Number(v.precio).toLocaleString("es-ES", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    });
 
-    function cardVinilo(v) {
-      const precio = Number(v.precio).toLocaleString("es-ES", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    // Si en la BD viene "uploads/xxx.jpg" -> queda "https://.../uploads/xxx.jpg"
+    const imgSrc = v.imagen ? `${API_BASE}/${v.imagen.replace(/^\/+/, "")}` : "";
 
-      // OJO: tus imágenes en DB vienen como "uploads/xxx.jpg".
-      // En Vercel NO existe /uploads. Por ahora mostramos placeholder si no carga.
-      const imgSrc = v.imagen ? `${API_BASE}/${v.imagen}` : "";
+    return `
+      <div class="col-12 col-sm-6 col-md-4 col-lg-3">
+        <div class="card h-100 shadow-sm" style="background-color: rgba(255,255,255,0.9); border: none;">
+          ${imgSrc ? `
+            <img
+              src="${imgSrc}"
+              class="card-img-top"
+              alt="${(v.nombre || "Vinilo").replace(/"/g, "&quot;")}"
+              loading="lazy"
+              onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22250%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22250%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ESin imagen%3C/text%3E%3C/svg%3E'">
+          ` : ``}
 
-      return `
-        <div class="col-12 col-sm-6 col-md-4 col-lg-3">
-          <div class="card h-100 shadow-sm" style="background-color: rgba(255,255,255,0.9); border: none;">
-            ${imgSrc ? `
-              <img src="${imgSrc}" class="card-img-top" alt="${v.nombre}"
-                onerror="this.onerror=null;this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22400%22 height=%22250%22%3E%3Crect fill=%22%23ddd%22 width=%22400%22 height=%22250%22/%3E%3Ctext fill=%22%23999%22 x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22%3ESin imagen%3C/text%3E%3C/svg%3E'">
-            ` : ``}
-
-            <div class="card-body d-flex flex-column">
-              <h5 class="card-title" style="font-family:'Bebas Neue', sans-serif;">${v.nombre}</h5>
-              ${v.artista ? `<p class="card-text text-muted mb-2"><small>${v.artista}</small></p>` : ``}
-              <p class="card-text mb-2"><strong>${precio} €</strong></p>
-            </div>
+          <div class="card-body d-flex flex-column">
+            <h5 class="card-title" style="font-family:'Bebas Neue', sans-serif;">${v.nombre ?? "Sin nombre"}</h5>
+            ${v.artista ? `<p class="card-text text-muted mb-2"><small>${v.artista}</small></p>` : ``}
+            <p class="card-text mb-2"><strong>${precio} €</strong></p>
           </div>
         </div>
-      `;
-    }
+      </div>
+    `;
+  }
 
-    async function cargar() {
-      try {
-        showMsg("Cargando catálogo...");
-        const res = await fetch(`${API_BASE}/api/vinilos`);
-        const data = await res.json();
+  async function cargar() {
+    try {
+      showMsg("Cargando catálogo...");
 
-        if (!res.ok || !data.ok) {
-          showMsg(data?.message || "No se pudo cargar el catálogo");
-          return;
-        }
+      const res = await fetch(`${API_BASE}/api/vinilos`, { cache: "no-store" });
+      const data = await res.json();
 
-        estado.style.display = "none";
-        grid.innerHTML = data.vinilos.map(cardVinilo).join("");
-      } catch (e) {
-        console.error(e);
-        showMsg("No se pudo conectar con el servidor (Railway).");
+      // Soporta dos formatos:
+      // 1) { ok:true, vinilos:[...] }
+      // 2) [...] (array directo)
+      const vinilos = Array.isArray(data) ? data : (data.vinilos || []);
+      const ok = Array.isArray(data) ? true : !!data.ok;
+
+      if (!res.ok || !ok) {
+        showMsg(data?.message || "No se pudo cargar el catálogo");
+        return;
       }
-    }
 
-    cargar();
-  </script>
+      estado.style.display = "none";
+      grid.innerHTML = vinilos.map(cardVinilo).join("");
+    } catch (e) {
+      console.error(e);
+      showMsg("No se pudo conectar con el servidor (Railway).");
+    }
+  }
+
+  cargar();
+</script>
+
 </body>
 
 </html>
