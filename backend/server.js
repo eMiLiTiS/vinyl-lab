@@ -6,16 +6,15 @@ const bcrypt = require("bcrypt");
 require("dotenv").config();
 const path = require("path");
 
+
 const app = express();
 app.use(express.json());
 
 // =========================
-// Static: /uploads -> /public/uploads
+// Static: /uploads -> /public/uploads (server.js está en /backend)
 // =========================
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "public", "uploads"))
-);
+app.use("/uploads", express.static(path.join(__dirname, "..", "public", "uploads")));
+
 
 // =========================
 // CORS
@@ -28,12 +27,6 @@ const allowedOrigins = [
   "http://127.0.0.1:5501",
   "https://vinyl-lab.vercel.app",
 ].filter(Boolean);
-
-
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "..", "public", "uploads"))
-);
 
 
 // =========================
